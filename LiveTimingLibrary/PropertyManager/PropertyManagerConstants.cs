@@ -1,0 +1,36 @@
+public class PropertyManagerConstants
+{
+    public static string PREFIX = "CHB.";
+    public static string SESSION_TYPE = "SessionType";
+    public static string PLAYER_POSITION = "PlayerPosition";
+    public static string POSITION = "Position";
+    public static string IS_PLAYER = "IsPlayer";
+    public static string CAR_NUMBER = "CarNumber";
+    public static string DISPLAY_NAME = "DisplayName";
+    public static string CAR_CLASS = "CarClass";
+    public static string MANUFACTURER = "Manufacturer";
+    public static string CAR_MODEL = "CarModel";
+    public static string CURRENT_LAP_NUMBER = "CurrentLapNumber";
+    public static string CURRENT_SECTOR = "CurrentSector";
+    public static string GAP_TO_LEADER = "GapToLeader";
+    public static string GAP_TO_CLASS_LEADER = "GapToClassLeader";
+    public static string GAP_TO_IN_FRONT = "GapToInFront";
+    public static string SECTOR_1_TIME = "Sector1Time";
+    public static string SECTOR_1_PACE_INDICATOR = "Sector1PaceIndicator";
+    public static string SECTOR_2_TIME = "Sector2Time";
+    public static string SECTOR_2_PACE_INDICATOR = "Sector2PaceIndicator";
+    public static string SECTOR_3_TIME = "Sector3Time";
+    public static string SECTOR_3_PACE_INDICATOR = "Sector3PaceIndicator";
+    public static string LAP_TIME = "LapTime";
+    public static string LAP_TIME_PACE_INDICATOR = "LapTimePaceIndicator";
+    public static string BEST_LAP_TIME = "BestLapTime";
+    public static string BEST_LAP_TIME_PACE_INDICATOR = "BestLapTimePaceIndicator";
+    public static string IN_PITS = "InPits";
+    public static string PIT_STOPS_TOTAL = "PitStopsTotal";
+    public static string PIT_STOPS_TOTAL_DURATION = "PitStopsTotalDuration";
+    public static string PIT_STOPS_LAST_DURATION = "PitStopLastDuration";
+    public static string LAPS_IN_CURRENT_STINT = "LapsInCurrentStint";
+    public static string TYRE_COMPOUND = "TyreCompound";
+    public static string FUEL_CAPACITY = "FuelCapacity";
+    public static string FUEL_LOAD = "FuelLoad";
+}
