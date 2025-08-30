@@ -1,7 +1,0 @@
-C:\Program Files (x86)\SimHub\LiveTimingPlugin.dll
-C:\Program Files (x86)\SimHub\LiveTimingPlugin.pdb
-C:\Users\chris\Documents\c#\LiveTimingLibraryV2\LiveTimingLibrary\obj\Debug\LiveTimingLibrary.csproj.AssemblyReference.cache
-C:\Users\chris\Documents\c#\LiveTimingLibraryV2\LiveTimingLibrary\obj\Debug\LiveTimingLibrary.csproj.CoreCompileInputs.cache
-C:\Users\chris\Documents\c#\LiveTimingLibraryV2\LiveTimingLibrary\obj\Debug\LiveTimi.BF35B61D.Up2Date
-C:\Users\chris\Documents\c#\LiveTimingLibraryV2\LiveTimingLibrary\obj\Debug\LiveTimingPlugin.dll
-C:\Users\chris\Documents\c#\LiveTimingLibraryV2\LiveTimingLibrary\obj\Debug\LiveTimingPlugin.pdb
