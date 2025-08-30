@@ -1,5 +1,3 @@
-using System;
-
 public class RaceEntryProcessor : IRaceEntryProcessor
 {
     private SessionEntryData _entry;

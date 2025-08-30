@@ -72,35 +72,4 @@ public class SessionData
             Entries.ForEach(e => e.Log());
         }
     }
-
-    /*
-        public override bool Equals(object obj)
-        {
-            // If parameter is null return false.
-            if (obj == null)
-            {
-                return false;
-            }
-
-            // If parameter cannot be cast to Point return false.
-            if (!(obj is SessionData other))
-            {
-                return false;
-            }
-
-            // Return true if the fields match:
-            return Game == other.Game &&
-                   SessionType == other.SessionType &&
-                   SessionTimeLeft == other.SessionTimeLeft &&
-                   CurrentLapNumber == other.CurrentLapNumber &&
-                   CurrentLapTime == other.CurrentLapTime &&
-                   TrackName == other.TrackName &&
-                   Enumerable.SequenceEqual(Entries, other.Entries);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-    */
 }

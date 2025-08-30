@@ -59,36 +59,4 @@ public class FragmentTimes
             FullLapPaceIndicator = FullLapPaceIndicator
         };
     }
-
-    /*
-        public override bool Equals(object obj)
-        {
-            // If parameter is null return false.
-            if (obj == null)
-            {
-                return false;
-            }
-
-            // If parameter cannot be cast to Point return false.
-            if (!(obj is FragmentTimes other))
-            {
-                return false;
-            }
-
-            // Return true if the fields match:
-            return Sector1 == other.Sector1 &&
-                   Sector1PaceIndicator == other.Sector1PaceIndicator &&
-                   Sector2 == other.Sector2 &&
-                   Sector2PaceIndicator == other.Sector2PaceIndicator &&
-                   Sector3 == other.Sector3 &&
-                   Sector3PaceIndicator == other.Sector3PaceIndicator &&
-                   FullLap == other.FullLap &&
-                   FullLapPaceIndicator == other.FullLapPaceIndicator;
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-    */
 }

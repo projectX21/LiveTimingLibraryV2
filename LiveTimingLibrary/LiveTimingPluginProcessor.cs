@@ -1,6 +1,3 @@
-using System.Linq;
-using AcTools.Utils.Helpers;
-
 public class LiveTimingPluginProcessor
 {
     private readonly IRaceEntryProcessor _raceEntryProcessor;
@@ -26,6 +23,5 @@ public class LiveTimingPluginProcessor
         SessionData mergedData = _sessionDataProvider.MergeWithPreviousData(data);
         PropertyManager.Instance.Add(PropertyManagerConstants.SESSION_TYPE, mergedData.SessionType.ToString());
         mergedData.Entries.ForEach(entry => _raceEntryProcessor.Process(entry));
-        mergedData.Entries.Where(e => e.CarNumber == "70").ForEach(entry => entry.CustomLog());
     }
 }

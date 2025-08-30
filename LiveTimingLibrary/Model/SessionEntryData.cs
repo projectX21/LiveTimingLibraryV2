@@ -261,56 +261,6 @@ public class SessionEntryData
         SimHub.Logging.Current.Debug($"SessionEntryData::Log() --------------------------------------------------");
     }
 
-    /*
-        public override bool Equals(object obj)
-        {
-            // If parameter is null return false.
-            if (obj == null)
-            {
-                return false;
-            }
-
-            // If parameter cannot be cast to Point return false.
-            if (!(obj is SessionEntryData other))
-            {
-                return false;
-            }
-
-            // Return true if the fields match:
-            return
-                CarNumber == other.CarNumber &&
-                DisplayName == other.DisplayName &&
-                Manufacturer == other.Manufacturer &&
-                CarModel == other.CarModel &&
-                CarClass == other.CarClass &&
-                SimHubPosition == other.SimHubPosition &&
-                Position == other.Position &&
-                IsInPit == other.IsInPit &&
-                IsPlayer == other.IsPlayer &&
-                CurrentLapNumber == other.CurrentLapNumber &&
-                TrackPositionPercent == other.TrackPositionPercent &&
-                CurrentLapTime == other.CurrentLapTime &&
-                GapToLeader == other.GapToLeader &&
-                GapToInFront == other.GapToInFront &&
-                SimHubGapToLeader == other.SimHubGapToLeader &&
-                LastLapTimes == other.LastLapTimes &&
-                CurrentLapTimes == other.CurrentLapTimes &&
-                BestTimes == other.BestTimes &&
-                FrontTyreCompound == other.FrontTyreCompound &&
-                RearTyreCompound == other.RearTyreCompound &&
-                StartPosition == other.StartPosition &&
-                FuelCapacity == other.FuelCapacity &&
-                FuelLoad == other.FuelLoad &&
-                PitEvents == other.PitEvents &&
-                EntryProgresses == other.EntryProgresses;
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-    */
-
     private LapFragmentType GetCurrentSector()
     {
         if (CurrentLapTimes != null)
