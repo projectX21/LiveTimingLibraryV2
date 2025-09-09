@@ -6,5 +6,7 @@ public interface IRaceEventRecoveryFile
 
     List<PitEvent> ReadPitEvents();
 
+    List<PlayerFinishedLapEvent> ReadPlayerFinishedLapEvents();
+
     void Clear();
 }

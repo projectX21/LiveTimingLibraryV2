@@ -19,7 +19,10 @@ namespace LiveTimingLibrary
             var sessionDataProvider = new SessionDataProvider(
                 new SessionDataRecovery(
                     new SessionDataRecoveryFile(),
-                    new RaceEventRecoveryFile(new RaceEventRecoveryFileEventSelector<PitEvent>())
+                    new RaceEventRecoveryFile(
+                        new RaceEventRecoveryFileEventSelector<PitEvent>(),
+                        new RaceEventRecoveryFileEventSelector<PlayerFinishedLapEvent>()
+                    )
                 )
             );
 

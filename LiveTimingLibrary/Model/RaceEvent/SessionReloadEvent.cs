@@ -2,8 +2,8 @@ using System;
 
 public class SessionReloadEvent : RaceEvent
 {
-    public SessionReloadEvent(string sessionId, int currentLapNumber, TimeSpan currentLapTime)
-        : base(sessionId, RaceEventType.SessionReload, currentLapNumber, currentLapTime) { }
+    public SessionReloadEvent(string sessionId, int playerLapNumber, TimeSpan playerLapTime)
+        : base(sessionId, RaceEventType.SessionReload, playerLapNumber, playerLapTime) { }
 
     public static SessionReloadEvent CreateFromRecoveryFileLine(string line)
     {
@@ -30,39 +30,13 @@ public class SessionReloadEvent : RaceEvent
     {
         return SessionId + s_recoveryFilePatternDelimiter
           + RaceEventTypeConverter.FromEnum(Type) + s_recoveryFilePatternDelimiter
-          + CurrentLapNumber + s_recoveryFilePatternDelimiter
-          + CurrentLapTime;
+          + PlayerLapNumber + s_recoveryFilePatternDelimiter
+          + PlayerLapTime;
     }
 
     public override string ToString()
     {
-        return $"[ sessionId: {SessionId}, type: {RaceEventTypeConverter.FromEnum(Type)}, CurrentLapNumber: {CurrentLapNumber}, CurrentLapTime: {CurrentLapTime} ]";
-    }
-
-    public override bool Equals(object obj)
-    {
-        // If parameter is null return false.
-        if (obj == null)
-        {
-            return false;
-        }
-
-        // If parameter cannot be cast to Point return false.
-        if (!(obj is SessionReloadEvent other))
-        {
-            return false;
-        }
-
-        // Return true if the fields match:
-        return SessionId == other.SessionId &&
-               Type == other.Type &&
-               CurrentLapNumber == other.CurrentLapNumber &&
-               CurrentLapTime == other.CurrentLapTime;
-    }
-
-    public override int GetHashCode()
-    {
-        return base.GetHashCode();
+        return $"[ sessionId: {SessionId}, type: {RaceEventTypeConverter.FromEnum(Type)}, PlayerLapNumber: {PlayerLapNumber}, PlayerLapTime: {PlayerLapTime} ]";
     }
 
     public static bool MatchesRecoveryFileFormat(string line)

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 
 public class RaceEventRecoveryFileEventSelector<T> : IRaceEventRecoveryFileEventSelector<T> where T : RaceEvent
@@ -11,26 +12,25 @@ public class RaceEventRecoveryFileEventSelector<T> : IRaceEventRecoveryFileEvent
             return new List<T>();
         }
 
-        var lines = File.ReadAllLines(filePath);
+        var lines = Utils.ReadLinesFromFile(filePath);
         var events = new List<T>();
         int? lapNumberLastReload = null;
         TimeSpan? lapTimeLastReload = null;
-        // TimeSpan? elapsedTimeLastReload = null;
 
         // read the recovery file in reverse order
-        for (var i = lines.Length - 1; i >= 0; i--)
+        for (var i = lines.Count() - 1; i >= 0; i--)
         {
             var raceEvent = ToRaceEvent(lines[i]);
 
             if (raceEvent is SessionReloadEvent @sessionEvent)
             {
-                lapNumberLastReload = @sessionEvent.CurrentLapNumber;
-                lapTimeLastReload = @sessionEvent.CurrentLapTime;
+                lapNumberLastReload = @sessionEvent.PlayerLapNumber;
+                lapTimeLastReload = @sessionEvent.PlayerLapTime;
             }
             else if (raceEvent is T @specificEvent)
             {
-                if (lapNumberLastReload == null || @specificEvent.CurrentLapNumber < lapNumberLastReload || (
-                    @specificEvent.CurrentLapNumber == lapNumberLastReload && @specificEvent.CurrentLapTime <= lapTimeLastReload
+                if (lapNumberLastReload == null || @specificEvent.PlayerLapNumber < lapNumberLastReload || (
+                    @specificEvent.PlayerLapNumber == lapNumberLastReload && @specificEvent.PlayerLapTime <= lapTimeLastReload
                 ))
                 {
                     events.Add(@specificEvent);
@@ -45,13 +45,13 @@ public class RaceEventRecoveryFileEventSelector<T> : IRaceEventRecoveryFileEvent
 
     private RaceEvent ToRaceEvent(string line)
     {
-        if (PitInEvent.MatchesRecoveryFileFormat(line))
+        if (PitEvent.MatchesRecoveryFileFormat(line))
         {
-            return PitInEvent.CreateFromRecoveryFileLine(line);
+            return PitEvent.CreateFromRecoveryFileLine(line);
         }
-        else if (PitOutEvent.MatchesRecoveryFileFormat(line))
+        else if (PlayerFinishedLapEvent.MatchesRecoveryFileFormat(line))
         {
-            return PitOutEvent.CreateFromRecoveryFileLine(line);
+            return PlayerFinishedLapEvent.CreateFromRecoveryFileLine(line);
         }
         else if (SessionReloadEvent.MatchesRecoveryFileFormat(line))
         {

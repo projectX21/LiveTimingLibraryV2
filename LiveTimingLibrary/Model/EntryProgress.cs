@@ -6,7 +6,7 @@ public class EntryProgress
 
     public int MiniSector { get; set; }
 
-    public TimeSpan SessionTimeLeft { get; set; }
+    public TimeSpan ElapsedSessionTime { get; set; }
 
     // only used for ordering the entries when the two EntryProgress are identical apart from that
     public int SimHubPosition { get; set; }
@@ -24,7 +24,7 @@ public class EntryProgress
         {
             LapNumber = LapNumber,
             MiniSector = MiniSector,
-            SessionTimeLeft = SessionTimeLeft,
+            ElapsedSessionTime = ElapsedSessionTime,
             SimHubPosition = SimHubPosition
         };
     }
@@ -43,7 +43,7 @@ public class EntryProgress
     {
         var diffLapNumber = LapNumber - other.LapNumber;
         var diffMiniSector = MiniSector - other.MiniSector;
-        var diffElapsedTime = SessionTimeLeft.CompareTo(other.SessionTimeLeft);
+        var diffElapsedTime = other.ElapsedSessionTime.CompareTo(ElapsedSessionTime);
 
         if (diffLapNumber != 0)
         {
@@ -65,6 +65,6 @@ public class EntryProgress
 
     public override string ToString()
     {
-        return $"EntryProgress: lap number: {LapNumber}, mini sector: {MiniSector}, session time left: {SessionTimeLeft}, simhub pos: {SimHubPosition}";
+        return $"EntryProgress: LapNumber: {LapNumber}, MiniSector: {MiniSector}, ElapsedSessionTime: {ElapsedSessionTime}, SimHubPosition: {SimHubPosition}";
     }
 }

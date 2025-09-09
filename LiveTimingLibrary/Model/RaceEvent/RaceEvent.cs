@@ -8,18 +8,18 @@ public abstract class RaceEvent
 
     public RaceEventType Type { get; protected set; }
 
-    public int CurrentLapNumber { get; set; }
+    public int PlayerLapNumber { get; set; }
 
-    public TimeSpan CurrentLapTime { get; set; }
+    public TimeSpan PlayerLapTime { get; set; }
 
     public RaceEvent() { }
 
-    public RaceEvent(string sessionId, RaceEventType type, int currentLapNumber, TimeSpan currentLapTime)
+    public RaceEvent(string sessionId, RaceEventType type, int playerLapNumber, TimeSpan playerLapTime)
     {
         SessionId = sessionId;
         Type = type;
-        CurrentLapNumber = currentLapNumber;
-        CurrentLapTime = currentLapTime;
+        PlayerLapNumber = playerLapNumber;
+        PlayerLapTime = playerLapTime;
     }
 
     public abstract string ToRecoveryFileFormat();

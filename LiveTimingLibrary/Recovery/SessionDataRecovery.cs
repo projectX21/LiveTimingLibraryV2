@@ -58,7 +58,8 @@ public class SessionDataRecovery : ISessionDataRecovery
 
         return new SessionData()
         {
-            Entries = entries
+            Entries = entries,
+            PlayerCompletedLaps = _raceEventRecoveryFile.ReadPlayerFinishedLapEvents()
         };
     }
 

@@ -22,8 +22,6 @@ public class SessionEntryData
 
     public int CurrentLapNumber { get; set; }
 
-    public TimeSpan CurrentLapTime { get; set; }
-
     public double TrackPositionPercent { get; set; }
 
     public string GapToLeader { get; set; }
@@ -51,6 +49,10 @@ public class SessionEntryData
     public double? FuelCapacity { get; set; }
 
     public double? FuelLoad { get; set; }
+
+    public GameTitle Game { get; set; }
+
+    public TimeSpan ElapsedSessionTime { get; set; }
 
     public List<PitEvent> PitEvents { get; set; } = new List<PitEvent>();
 
@@ -81,6 +83,14 @@ public class SessionEntryData
         }
     }
 
+    public TimeSpan? CurrentPitStopDuration
+    {
+        get
+        {
+            return GetCurrentPitStopDuration();
+        }
+    }
+
     public TimeSpan? LastPitStopDuration
     {
         get
@@ -89,7 +99,7 @@ public class SessionEntryData
         }
     }
 
-    public TimeSpan TotalPitStopDuration
+    public TimeSpan? TotalPitStopDuration
     {
         get
         {
@@ -110,7 +120,6 @@ public class SessionEntryData
             IsInPit = IsInPit,
             IsPlayer = IsPlayer,
             CurrentLapNumber = CurrentLapNumber,
-            CurrentLapTime = CurrentLapTime,
             TrackPositionPercent = TrackPositionPercent,
             GapToLeader = GapToLeader,
             GapToClassLeader = GapToClassLeader,
@@ -125,6 +134,8 @@ public class SessionEntryData
             StartPosition = StartPosition,
             FuelCapacity = FuelCapacity,
             FuelLoad = FuelLoad,
+            Game = Game,
+            ElapsedSessionTime = ElapsedSessionTime,
             PitEvents = PitEvents?.Select(p => p.Clone()).ToList(),
             EntryProgresses = EntryProgresses?.Select(e => e.Clone()).ToList()
         };
@@ -132,30 +143,61 @@ public class SessionEntryData
 
     public bool IsValid(GameTitle game)
     {
-        if (game == GameTitle.ACC && !SessionDataValidator.IsValidAccData(CurrentLapTime))
-        {
-            return false;
-        }
-
-        return true;
+        return SessionDataValidator.IsValidEntry(this, game);
     }
 
-    public void AddPitEvent(PitEvent pitEvent)
+    public string GetValueByProperty(string property)
+    {
+        switch (property.Trim().ToLower())
+        {
+            case "carnumber": return CarNumber;
+            case "displayname": return DisplayName;
+            case "manufacturer": return Manufacturer;
+            case "carmodel": return CarModel;
+            case "carclass": return CarClass;
+            default:
+                SimHub.Logging.Current.Warn($"SessionEntryData::GetValueByProperty(): not supported property: {property}");
+                return null;
+        }
+    }
+
+    public void SetValueByProperty(string property, string value)
+    {
+        switch (property.Trim().ToLower())
+        {
+            case "carnumber": CarNumber = value; break;
+            case "displayname": DisplayName = value; break;
+            case "manufacturer": Manufacturer = value; break;
+            case "carmodel": CarModel = value; break;
+            case "carclass": CarClass = value; break;
+            default:
+                SimHub.Logging.Current.Warn($"SessionEntryData::SetValueByProperty(): not supported property: {property}");
+                break;
+        }
+    }
+
+    public bool AddPitEvent(PitEvent pitEvent)
     {
         if (IsPitEventAddable(pitEvent))
         {
-            SimHub.Logging.Current.Debug($"SessionEntryData::AddPitEvent(): add event: {pitEvent}");
+            SimHub.Logging.Current.Info($"SessionEntryData::AddPitEvent(): add event: {pitEvent}");
             PitEvents.Add(pitEvent);
+            return true;
         }
+
+        return false;
     }
 
-    public void AddEntryProgress(EntryProgress progress)
+    public bool AddEntryProgress(EntryProgress progress)
     {
         if (IsEntryProgressAddable(progress))
         {
             EntryProgresses.Add(progress);
             ReorgEntryProgresses();
+            return true;
         }
+
+        return false;
     }
 
     public string CalcGap(SessionEntryData entryInFront, SessionType sessionType)
@@ -199,77 +241,72 @@ public class SessionEntryData
 
     public void Log()
     {
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Position:           {Position}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CarNumber:          {CarNumber}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - DisplayName:        {DisplayName}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Manufacturer:       {Manufacturer}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CarModel:           {CarModel}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CarClass:           {CarClass}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - IsInPit:            {IsInPit}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - IsPlayer:           {IsPlayer}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - TrackPosition%:     {TrackPositionPercent}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CurrentLapNumber:   {CurrentLapNumber}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CurrentSector:      {CurrentSector}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CurrentLapTime:     {CurrentLapTime}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - GapToLeader:        {GapToLeader}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - GapToClassLeader:   {GapToClassLeader}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - GapToInFront:       {GapToInFront}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - SimHubPosition:     {SimHubPosition}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - SimHubGapToLeader:  {SimHubGapToLeader}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap S1:        {LastLapTimes?.Sector1}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap S1 PI:     {LastLapTimes?.Sector1PaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap S2:        {LastLapTimes?.Sector2}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap S2 PI:     {LastLapTimes?.Sector2PaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap S3:        {LastLapTimes?.Sector3}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap S3 PI:     {LastLapTimes?.Sector3PaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap FL:        {LastLapTimes?.FullLap}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last Lap FL PI:     {LastLapTimes?.FullLapPaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap S1:     {CurrentLapTimes?.Sector1}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap S1 PI:  {CurrentLapTimes?.Sector1PaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap S2:     {CurrentLapTimes?.Sector2}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap S2 PI:  {CurrentLapTimes?.Sector2PaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap S3:     {CurrentLapTimes?.Sector3}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap S3 PI:  {CurrentLapTimes?.Sector3PaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap FL:     {CurrentLapTimes?.FullLap}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Current Lap FL PI:  {CurrentLapTimes?.FullLapPaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Best S1:            {BestTimes?.Sector1}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Best S2:            {BestTimes?.Sector2}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Best S3:            {BestTimes?.Sector3}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Best FL:            {BestTimes?.FullLap}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Best FL PI:         {BestTimes?.FullLapPaceIndicator}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Front Tyre:         {FrontTyreCompound}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Rear Tyre:          {RearTyreCompound}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Start position:     {StartPosition}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Fuel capacity:      {FuelCapacity}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Fuel load:          {FuelLoad}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Pit stop count:     {PitStopCount}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Laps in curr stint: {LapCountInCurrentStint}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Last pit duration:  {LastPitStopDuration}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Total pit duration: {LastPitStopDuration}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Latest progress:    {EntryProgresses.LastOrDefault()}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log() --------------------------------------------------");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Position:           {Position}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - CarNumber:          {CarNumber}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - DisplayName:        {DisplayName}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Manufacturer:       {Manufacturer}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - CarModel:           {CarModel}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - CarClass:           {CarClass}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - IsInPit:            {IsInPit}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - IsPlayer:           {IsPlayer}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - TrackPosition%:     {TrackPositionPercent}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - CurrentLapNumber:   {CurrentLapNumber}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - CurrentSector:      {CurrentSector}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - GapToLeader:        {GapToLeader}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - GapToClassLeader:   {GapToClassLeader}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - GapToInFront:       {GapToInFront}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - SimHubPosition:     {SimHubPosition}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - SimHubGapToLeader:  {SimHubGapToLeader}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap S1:        {LastLapTimes?.Sector1}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap S1 PI:     {LastLapTimes?.Sector1PaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap S2:        {LastLapTimes?.Sector2}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap S2 PI:     {LastLapTimes?.Sector2PaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap S3:        {LastLapTimes?.Sector3}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap S3 PI:     {LastLapTimes?.Sector3PaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap FL:        {LastLapTimes?.FullLap}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last Lap FL PI:     {LastLapTimes?.FullLapPaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap S1:     {CurrentLapTimes?.Sector1}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap S1 PI:  {CurrentLapTimes?.Sector1PaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap S2:     {CurrentLapTimes?.Sector2}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap S2 PI:  {CurrentLapTimes?.Sector2PaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap S3:     {CurrentLapTimes?.Sector3}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap S3 PI:  {CurrentLapTimes?.Sector3PaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap FL:     {CurrentLapTimes?.FullLap}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Current Lap FL PI:  {CurrentLapTimes?.FullLapPaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Best S1:            {BestTimes?.Sector1}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Best S2:            {BestTimes?.Sector2}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Best S3:            {BestTimes?.Sector3}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Best FL:            {BestTimes?.FullLap}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Best FL PI:         {BestTimes?.FullLapPaceIndicator}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Front Tyre:         {FrontTyreCompound}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Rear Tyre:          {RearTyreCompound}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Start position:     {StartPosition}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Fuel capacity:      {FuelCapacity}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Fuel load:          {FuelLoad}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Pit stop count:     {PitStopCount}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Laps in curr stint: {LapCountInCurrentStint}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Last pit duration:  {LastPitStopDuration}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Total pit duration: {LastPitStopDuration}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Game:               {Game}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - ElapsedSessionTime: {ElapsedSessionTime}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Latest progress:    {EntryProgresses.LastOrDefault()}");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log() --------------------------------------------------");
     }
 
     public void CustomLog()
     {
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Position:           {Position}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - Latest progress:    {EntryProgresses.LastOrDefault()}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CurrentLapNumber:   {CurrentLapNumber}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CurrentSector:      {CurrentSector}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - TrackPosition%:     {TrackPositionPercent}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log(): {CarNumber} - CurrentLapTime:     {CurrentLapTime}");
-        SimHub.Logging.Current.Debug($"SessionEntryData::Log() --------------------------------------------------");
+        SimHub.Logging.Current.Info($"SessionEntryData::Log(): {CarNumber} - Latest progress:    {EntryProgresses.LastOrDefault()}");
     }
 
     private LapFragmentType GetCurrentSector()
     {
         if (CurrentLapTimes != null)
         {
-            if (CurrentLapTimes.GetLapTimeByLapFragmentType(LapFragmentType.SECTOR_2) != null)
+            if (CurrentLapTimes.GetTimeByLapFragmentType(LapFragmentType.SECTOR_2) != null)
             {
                 return LapFragmentType.SECTOR_3;
             }
-            else if (CurrentLapTimes.GetLapTimeByLapFragmentType(LapFragmentType.SECTOR_1) != null)
+            else if (CurrentLapTimes.GetTimeByLapFragmentType(LapFragmentType.SECTOR_1) != null)
             {
                 return LapFragmentType.SECTOR_2;
             }
@@ -319,14 +356,37 @@ public class SessionEntryData
 
     private bool IsEntryProgressAddable(EntryProgress entryProgress)
     {
-        // Is only addable if the same lap number and sector doesn't exist yet
-        return !EntryProgresses.Any(ep => entryProgress.IdenticalLapNumberAndMiniSector(ep));
-    }
+        if (!EntryProgresses.Any())
+        {
+            return true;
+        }
 
+        var last = EntryProgresses.Last();
+
+        // Already exists
+        if (EntryProgresses.Any(ep => entryProgress.IdenticalLapNumberAndMiniSector(ep)))
+        {
+            return false;
+        }
+
+        // Same lap, wrong mini sector sequence
+        if (entryProgress.LapNumber == last.LapNumber && last.MiniSector + 1 != entryProgress.MiniSector)
+        {
+            return false;
+        }
+
+        // New lap must start with mini sector 0
+        if (entryProgress.LapNumber > last.LapNumber && entryProgress.MiniSector != 0)
+        {
+            return false;
+        }
+
+        return true;
+    }
 
     private int GetLapCountInCurrentStint()
     {
-        var lapNumberLastPitOut = PitEvents.FindLast(e => e.Type == RaceEventType.PitOut)?.CurrentLapNumber ?? 1;
+        var lapNumberLastPitOut = PitEvents.FindLast(e => e.Type == RaceEventType.PitOut)?.EntryLapNumber ?? 1;
         // e.g. current lap number = 3, last pit out lap: 3 -> means the entry is the first lap of the current stint. Therefore the +1 is needed
         return CurrentLapNumber - lapNumberLastPitOut + 1;
     }
@@ -334,6 +394,21 @@ public class SessionEntryData
     private int GetPitStopCount()
     {
         return PitEvents.Where(e => e.Type == RaceEventType.PitIn).Count();
+    }
+
+    private TimeSpan? GetCurrentPitStopDuration()
+    {
+        if (PitEvents.Count() > 0 && PitEvents.Last().Type == RaceEventType.PitIn)
+        {
+            var result = ElapsedSessionTime.Subtract(PitEvents.Last().ElapsedSessionTime);
+
+            if (result > TimeSpan.Zero)
+            {
+                return result;
+            }
+        }
+
+        return null;
     }
 
     private TimeSpan? GetLastPitStopDuration()
@@ -349,34 +424,40 @@ public class SessionEntryData
                 return null;
             }
 
-            var lastPitOut = (PitOutEvent)PitEvents[indexLastPitOut];
-            return PitEvent.CalcPitStopDuration((PitInEvent)lastPitIn, lastPitOut);
+            var lastPitOut = PitEvents[indexLastPitOut];
+            var result = PitEvent.CalcPitStopDuration(lastPitIn, PitEvents[indexLastPitOut]);
+
+            if (result > TimeSpan.Zero)
+            {
+                return result;
+            }
         }
 
         return null;
     }
 
-    private TimeSpan GetTotalPitStopDuration()
+    private TimeSpan? GetTotalPitStopDuration()
     {
-        TimeSpan totalPitDuration = TimeSpan.Zero;
-        PitOutEvent lastPitOut = null;
-
-        foreach (PitEvent pitEvent in PitEvents.AsEnumerable().Reverse())
-        {
-            if (pitEvent.Type == RaceEventType.PitOut)
-            {
-                lastPitOut = (PitOutEvent)pitEvent;
-            }
-            else if (pitEvent.Type == RaceEventType.PitIn)
-            {
-                if (lastPitOut != null)
+        var (Total, LastPitOut) = PitEvents
+            .AsEnumerable()
+            .Reverse()
+            .Aggregate(
+                (Total: TimeSpan.Zero, LastPitOut: (PitEvent)null),
+                (acc, evt) =>
                 {
-                    totalPitDuration.Add(PitEvent.CalcPitStopDuration((PitInEvent)pitEvent, lastPitOut));
-                }
-            }
-        }
+                    if (evt.Type == RaceEventType.PitOut)
+                    {
+                        acc.LastPitOut = evt;
+                    }
+                    else if (evt.Type == RaceEventType.PitIn && acc.LastPitOut != null)
+                    {
+                        acc.Total += PitEvent.CalcPitStopDuration(evt, acc.LastPitOut);
+                        acc.LastPitOut = null;
+                    }
+                    return acc;
+                });
 
-        return totalPitDuration;
+        return Total > TimeSpan.Zero ? Total : (TimeSpan?)null;
     }
 
     private void ReorgEntryProgresses()

@@ -18,7 +18,7 @@ public class FragmentTimes
 
     public FragmentTimePaceIndicator? FullLapPaceIndicator { get; set; }
 
-    public TimeSpan? GetLapTimeByLapFragmentType(LapFragmentType type)
+    public TimeSpan? GetTimeByLapFragmentType(LapFragmentType type)
     {
         switch (type)
         {
@@ -31,6 +31,16 @@ public class FragmentTimes
         return null;
     }
 
+    public void SetTimeByLapFragmentType(LapFragmentType type, TimeSpan time)
+    {
+        switch (type)
+        {
+            case LapFragmentType.SECTOR_1: Sector1 = time; break;
+            case LapFragmentType.SECTOR_2: Sector2 = time; break;
+            case LapFragmentType.SECTOR_3: Sector3 = time; break;
+            case LapFragmentType.FULL_LAP: FullLap = time; break;
+        }
+    }
 
     public FragmentTimePaceIndicator? GetPaceIndicatorByLapFragmentType(LapFragmentType type)
     {

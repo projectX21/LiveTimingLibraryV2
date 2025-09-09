@@ -1,8 +1,11 @@
 public class PropertyManagerConstants
 {
     public static string PREFIX = "CHB.";
+    public static string FLEX_OFFSET = "FlexOffset";
+    public static string HIGHLIGHT_CAR_CLASS = "HighlightCarClass";
     public static string SESSION_TYPE = "SessionType";
     public static string PLAYER_POSITION = "PlayerPosition";
+    public static string ENTRY_COUNT = "EntryCount";
     public static string POSITION = "Position";
     public static string IS_PLAYER = "IsPlayer";
     public static string CAR_NUMBER = "CarNumber";
@@ -11,6 +14,7 @@ public class PropertyManagerConstants
     public static string MANUFACTURER = "Manufacturer";
     public static string CAR_MODEL = "CarModel";
     public static string CURRENT_LAP_NUMBER = "CurrentLapNumber";
+    public static string CURRENT_LAP_TIME = "CurrentLapTime";
     public static string CURRENT_SECTOR = "CurrentSector";
     public static string GAP_TO_LEADER = "GapToLeader";
     public static string GAP_TO_CLASS_LEADER = "GapToClassLeader";
@@ -29,6 +33,7 @@ public class PropertyManagerConstants
     public static string PIT_STOPS_TOTAL = "PitStopsTotal";
     public static string PIT_STOPS_TOTAL_DURATION = "PitStopsTotalDuration";
     public static string PIT_STOPS_LAST_DURATION = "PitStopLastDuration";
+    public static string PIT_STOPS_CURRENT_DURATION = "PitStopCurrentDuration";
     public static string LAPS_IN_CURRENT_STINT = "LapsInCurrentStint";
     public static string TYRE_COMPOUND = "TyreCompound";
     public static string FUEL_CAPACITY = "FuelCapacity";

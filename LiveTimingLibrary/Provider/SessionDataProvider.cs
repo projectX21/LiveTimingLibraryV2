@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using AcTools.Utils.Helpers;
@@ -24,18 +23,21 @@ public class SessionDataProvider : ISessionDataProvider
     {
         if (HasSessionIdChanged(recoveredData, newData))
         {
-            SimHub.Logging.Current.Info($"SessionDataProvider::MergeWithPreviousData() of SessionData: session change detected: {recoveredData?.SessionId} to {newData.SessionId}");
+            SimHub.Logging.Current.Info($"SessionDataProvider::GetOldData(): session change detected: {recoveredData?.SessionId} to {newData.SessionId}");
             _sessionDataRecovery.Clear();
             PropertyManager.Instance.ResetAll();
+            PropertyManager.Instance.Add(PropertyManagerConstants.FLEX_OFFSET, 0);
+
             return null;
         }
-        else if (WasSessionReloaded(recoveredData, newData))
+        else if (WasRaceSessionReloaded(recoveredData, newData))
         {
-            SimHub.Logging.Current.Info($"SessionDataProvider::MergeWithPreviousData() of SessionData: session reload detected");
+            SimHub.Logging.Current.Info($"SessionDataProvider::GetOldData(): session reload detected");
+            SimHub.Logging.Current.Info($"SessionDataProvider::GetOldData(): Recovered: {recoveredData.PlayerCurrentLapNumber}, {recoveredData.PlayerCurrentLapTime}, new: {newData.PlayerCurrentLapNumber}, {newData.PlayerCurrentLapTime}");
             PropertyManager.Instance.ResetAll();
 
             // Event must be fired _before_ creating the recovery data
-            _sessionDataRecovery.SaveRaceEvent(new SessionReloadEvent(newData.SessionId, newData.CurrentLapNumber, newData.CurrentLapTime));
+            _sessionDataRecovery.SaveRaceEvent(new SessionReloadEvent(newData.SessionId, newData.PlayerCurrentLapNumber, newData.PlayerCurrentLapTime));
             return _sessionDataRecovery.CreateBasicSessionDataFromRaceEventRecovery();
         }
 
@@ -47,12 +49,13 @@ public class SessionDataProvider : ISessionDataProvider
         return recoveredData == null || recoveredData.SessionId != newData.SessionId;
     }
 
-    private bool WasSessionReloaded(SessionData recoveredData, SessionData newData)
+    private bool WasRaceSessionReloaded(SessionData recoveredData, SessionData newData)
     {
-        return recoveredData != null && (
-                    recoveredData.CurrentLapNumber > newData.CurrentLapNumber ||
-                    (recoveredData.CurrentLapNumber == newData.CurrentLapNumber && recoveredData.CurrentLapTime > newData.CurrentLapTime)
-        );
+        return recoveredData != null && newData != null && newData.SessionType == SessionType.Race &&
+            (
+                recoveredData.PlayerCurrentLapNumber > newData.PlayerCurrentLapNumber ||
+                (recoveredData.PlayerCurrentLapNumber == newData.PlayerCurrentLapNumber && recoveredData.PlayerCurrentLapTime > newData.PlayerCurrentLapTime)
+            );
     }
 
     private SessionData Merge(SessionData oldData, SessionData newData)
@@ -65,17 +68,34 @@ public class SessionDataProvider : ISessionDataProvider
             return mergedData;
         }
 
+        // Adopt the player completed laps from the old data
+        mergedData.PlayerCompletedLaps = oldData.PlayerCompletedLaps.Select(p => p.Clone()).ToList();
+
+        // Player has finished a lap -> add it to the completed laps store
+        if (oldData.PlayerCurrentLapNumber >= 1 &&
+            newData.PlayerCurrentLapNumber > oldData.PlayerCurrentLapNumber &&
+            newData.PlayerEntryData.LastLapTimes.FullLap.HasValue)
+        {
+            SimHub.Logging.Current.Info($"SessionDataProvider::Merge(SessionData): player has finished lap: new lap number {newData.PlayerCurrentLapNumber}, old lap number {oldData.PlayerCurrentLapNumber}, lap time: {newData.PlayerEntryData.LastLapTimes.FullLap.Value}");
+            var playerFinishedLapEvent = new PlayerFinishedLapEvent(newData.SessionId, oldData.PlayerCurrentLapNumber, newData.PlayerEntryData.LastLapTimes.FullLap.Value);
+
+            if (mergedData.AddPlayerFinishedLapEvent(playerFinishedLapEvent))
+            {
+                _sessionDataRecovery.SaveRaceEvent(playerFinishedLapEvent);
+            }
+        }
+
         // Merge the entries
         // But only do a proper merging with the old data when the session wasn't reloaded nor the session id has changed,
         // because in such a case the old data is really useless.
         var entries = mergedData.Entries.Select(newEntry =>
-            {
-                var oldEntry = oldData.Entries.FirstOrDefault(o => o.CarNumber == newEntry.CarNumber);
-                return Merge(oldEntry, newEntry, mergedData);
-            })
-            .Where(entry => entry != null)
-            .Sort((a, b) => newData.SessionType == SessionType.Race ? a.CompareByProgressTo(b) : a.CompareByBestLapTimeTo(b))
-            .ToList();
+        {
+            var oldEntry = oldData.Entries.FirstOrDefault(o => o.CarNumber == newEntry.CarNumber);
+            return Merge(oldEntry, newEntry, mergedData);
+        })
+        .Where(entry => entry != null && entry.IsValid(mergedData.Game))
+        .Sort((a, b) => newData.SessionType == SessionType.Race ? a.CompareByProgressTo(b) : a.CompareByBestLapTimeTo(b))
+        .ToList();
 
         SetAdditionalTimingData(entries, newData.SessionType);
         mergedData.Entries = entries;
@@ -100,51 +120,47 @@ public class SessionDataProvider : ISessionDataProvider
         mergedData.PitEvents = oldData.PitEvents.Select(p => p.Clone()).ToList();
         mergedData.EntryProgresses = oldData.EntryProgresses.Select(p => p.Clone()).ToList();
 
-        // Add pit event
-        if (mergedData.IsInPit != oldData.IsInPit)
+        // Adopt the ElapsedSessionTime from the SessionData
+        mergedData.ElapsedSessionTime = newSessionData.ElapsedSessionTime;
+
+        // Add events or progression only in race session
+        if (newSessionData.SessionType == SessionType.Race)
         {
-            if (mergedData.IsInPit)
+            // Add pit event
+            if (mergedData.IsInPit != oldData.IsInPit)
             {
-                var pitInEvent = new PitInEvent(newSessionData.SessionId, mergedData.CarNumber, mergedData.CurrentLapNumber, mergedData.CurrentLapTime);
-                mergedData.AddPitEvent(pitInEvent);
-                _sessionDataRecovery.SaveRaceEvent(pitInEvent);
+                var pitEvent = new PitEvent(
+                    newSessionData.SessionId,
+                    mergedData.IsInPit ? RaceEventType.PitIn : RaceEventType.PitOut,
+                    mergedData.CarNumber,
+                    mergedData.CurrentLapNumber,
+                    newSessionData.ElapsedSessionTime,
+                    newSessionData.PlayerCurrentLapNumber,
+                    newSessionData.PlayerCurrentLapTime
+                );
+
+                if (mergedData.AddPitEvent(pitEvent))
+                {
+                    _sessionDataRecovery.SaveRaceEvent(pitEvent);
+                }
             }
-            else
+
+            // Add progress (only if SessionTimeLeft property is available)
+            if (mergedData.ElapsedSessionTime != null && (
+                    oldData.CurrentLapNumber != mergedData.CurrentLapNumber ||
+                    EntryProgress.GetMiniSector(oldData.TrackPositionPercent) != EntryProgress.GetMiniSector(mergedData.TrackPositionPercent))
+                )
             {
-                var pitOutEvent = new PitOutEvent(newSessionData.SessionId, mergedData.CarNumber, mergedData.CurrentLapNumber, mergedData.CurrentLapTime, mergedData.LastLapTimes?.FullLap ?? TimeSpan.Zero);
-                mergedData.AddPitEvent(pitOutEvent);
-                _sessionDataRecovery.SaveRaceEvent(pitOutEvent);
+                var currentProgress = new EntryProgress()
+                {
+                    LapNumber = mergedData.CurrentLapNumber,
+                    MiniSector = EntryProgress.GetMiniSector(mergedData.TrackPositionPercent),
+                    ElapsedSessionTime = mergedData.ElapsedSessionTime,
+                    SimHubPosition = mergedData.SimHubPosition
+                };
+
+                mergedData.AddEntryProgress(currentProgress);
             }
-        }
-
-        // Add progress (only if SessionTimeLeft property is available)
-        if (newSessionData.SessionTimeLeft != null && (
-                oldData.CurrentLapNumber != mergedData.CurrentLapNumber ||
-                EntryProgress.GetMiniSector(oldData.TrackPositionPercent) != EntryProgress.GetMiniSector(mergedData.TrackPositionPercent))
-            )
-        {
-            var currentProgress = new EntryProgress()
-            {
-                LapNumber = mergedData.CurrentLapNumber,
-                MiniSector = EntryProgress.GetMiniSector(mergedData.TrackPositionPercent),
-                SessionTimeLeft = newSessionData.SessionTimeLeft,
-                SimHubPosition = mergedData.SimHubPosition
-            };
-
-            mergedData.AddEntryProgress(currentProgress);
-        }
-
-        /* Special handling for ACC:
-        * ACC has the strange behavior, that it will change the lap number and the track position % some milliseconds too late when the lap time is already reseted to 0.
-        *
-        * Example:
-        * [2024-11-13 21:56:08,387] INFO - Lap: 2 - Lap time 98.087
-        * [2024-11-13 21:56:08,404] INFO - Lap: 2 - Lap time 0.012
-        * [2024-11-13 21:56:08,420] INFO - Lap: 3 - Lap time 0.027 */
-        if (oldData.CurrentLapNumber == mergedData.CurrentLapNumber && oldData.CurrentLapTime > mergedData.CurrentLapTime)
-        {
-            mergedData.CurrentLapNumber += 1;
-            mergedData.TrackPositionPercent = 0.0;
         }
 
         return mergedData;

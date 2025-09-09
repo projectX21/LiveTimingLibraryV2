@@ -82,7 +82,7 @@ public class GapUtils
         {
             // entry InFront has more laps and the latest mini sector is the same, but the entry in front has crossed it later.
             // Therefore we have to decrement one lap
-            if (progressEntryInFront.SessionTimeLeft.TotalSeconds < latestProgress.SessionTimeLeft.TotalSeconds)
+            if (progressEntryInFront.ElapsedSessionTime.TotalSeconds > latestProgress.ElapsedSessionTime.TotalSeconds)
             {
                 diffInLaps -= 1;
 
@@ -107,7 +107,7 @@ public class GapUtils
         }
         else
         {
-            var gap = progressEntryInFront.SessionTimeLeft.Subtract(latestProgress.SessionTimeLeft);
+            var gap = latestProgress.ElapsedSessionTime.Subtract(progressEntryInFront.ElapsedSessionTime);
 
             // only display positive gaps
             return gap >= TimeSpan.Zero ? TimeSpanFormatter.Format(gap) : null;
@@ -129,7 +129,7 @@ public class GapUtils
         }
         else
         {
-            var gap = TimeSpan.FromSeconds(entryBehind.SimHubGapToLeader ?? 0.0).Subtract(TimeSpan.FromSeconds(entryInFront.SimHubGapToLeader ?? 0.0));
+            var gap = TimeSpan.FromSeconds(Utils.ToSafeDouble(entryBehind.SimHubGapToLeader)).Subtract(TimeSpan.FromSeconds(Utils.ToSafeDouble(entryInFront.SimHubGapToLeader)));
 
             // only display positive gaps
             return gap >= TimeSpan.Zero ? TimeSpanFormatter.Format(gap) : null;
@@ -138,8 +138,8 @@ public class GapUtils
 
     private static string CalcGapInQualiOrTraining(SessionEntryData entryBehind, SessionEntryData entryInFront)
     {
-        var bestLap = entryBehind.BestTimes.GetLapTimeByLapFragmentType(LapFragmentType.FULL_LAP);
-        var inFrontBestLap = entryInFront.BestTimes.GetLapTimeByLapFragmentType(LapFragmentType.FULL_LAP);
+        var bestLap = entryBehind.BestTimes.GetTimeByLapFragmentType(LapFragmentType.FULL_LAP);
+        var inFrontBestLap = entryInFront.BestTimes.GetTimeByLapFragmentType(LapFragmentType.FULL_LAP);
 
         // Cannot calculate a gap if one of the entries has no best lap time yet
         if (bestLap == null || inFrontBestLap == null)

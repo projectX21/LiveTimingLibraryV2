@@ -11,6 +11,11 @@ public class RaceEntryProcessor : IRaceEntryProcessor
 
     private void UpdateGeneralProperties()
     {
+        if (_entry.Position <= 0)
+        {
+            return;
+        }
+
         if (_entry.IsPlayer)
         {
             PropertyManager.Instance.Add(PropertyManagerConstants.PLAYER_POSITION, _entry.Position);
@@ -35,24 +40,25 @@ public class RaceEntryProcessor : IRaceEntryProcessor
         // Pit stop properties
         UpdateProperty(PropertyManagerConstants.IN_PITS, _entry.IsInPit);
         UpdateProperty(PropertyManagerConstants.PIT_STOPS_TOTAL, _entry.PitStopCount);
-        UpdateProperty(PropertyManagerConstants.PIT_STOPS_TOTAL_DURATION, _entry.TotalPitStopDuration);
-        UpdateProperty(PropertyManagerConstants.PIT_STOPS_LAST_DURATION, _entry.LastPitStopDuration);
+        UpdateProperty(PropertyManagerConstants.PIT_STOPS_TOTAL_DURATION, TimeSpanFormatter.Format(_entry.TotalPitStopDuration));
+        UpdateProperty(PropertyManagerConstants.PIT_STOPS_CURRENT_DURATION, TimeSpanFormatter.Format(_entry.CurrentPitStopDuration));
+        UpdateProperty(PropertyManagerConstants.PIT_STOPS_LAST_DURATION, TimeSpanFormatter.Format(_entry.LastPitStopDuration));
         UpdateProperty(PropertyManagerConstants.LAPS_IN_CURRENT_STINT, _entry.LapCountInCurrentStint);
     }
 
     private void UpdateLapFragmentProperties()
     {
         // init the sector times from the last lap
-        var s1Time = _entry.LastLapTimes.GetLapTimeByLapFragmentType(LapFragmentType.SECTOR_1);
+        var s1Time = _entry.LastLapTimes.GetTimeByLapFragmentType(LapFragmentType.SECTOR_1);
         var s1Indicator = _entry.LastLapTimes.GetPaceIndicatorByLapFragmentType(LapFragmentType.SECTOR_1);
 
-        var s2Time = _entry.LastLapTimes.GetLapTimeByLapFragmentType(LapFragmentType.SECTOR_2);
+        var s2Time = _entry.LastLapTimes.GetTimeByLapFragmentType(LapFragmentType.SECTOR_2);
         var s2Indicator = _entry.LastLapTimes.GetPaceIndicatorByLapFragmentType(LapFragmentType.SECTOR_2);
 
-        var s3Time = _entry.LastLapTimes.GetLapTimeByLapFragmentType(LapFragmentType.SECTOR_3);
+        var s3Time = _entry.LastLapTimes.GetTimeByLapFragmentType(LapFragmentType.SECTOR_3);
         var s3Indicator = _entry.LastLapTimes.GetPaceIndicatorByLapFragmentType(LapFragmentType.SECTOR_3);
 
-        var lapTime = _entry.LastLapTimes.GetLapTimeByLapFragmentType(LapFragmentType.FULL_LAP);
+        var lapTime = _entry.LastLapTimes.GetTimeByLapFragmentType(LapFragmentType.FULL_LAP);
         var lapIndicator = _entry.LastLapTimes.GetPaceIndicatorByLapFragmentType(LapFragmentType.FULL_LAP);
 
         int currentSector = (int)_entry.CurrentSector;
@@ -81,15 +87,15 @@ public class RaceEntryProcessor : IRaceEntryProcessor
         var bestLapPaceIndicator = _entry.BestTimes.FullLapPaceIndicator.HasValue && _entry.BestTimes.FullLapPaceIndicator.Value != FragmentTimePaceIndicator.ENTRY_BEST ? _entry.BestTimes.FullLapPaceIndicator : null;
 
         UpdateProperty(PropertyManagerConstants.SECTOR_1_TIME, TimeSpanFormatter.Format(s1Time));
-        UpdateProperty(PropertyManagerConstants.SECTOR_1_PACE_INDICATOR, s1Indicator);
+        UpdateProperty(PropertyManagerConstants.SECTOR_1_PACE_INDICATOR, FragmentTimePaceIndicatorConverter.ToString(s1Indicator));
         UpdateProperty(PropertyManagerConstants.SECTOR_2_TIME, TimeSpanFormatter.Format(s2Time));
-        UpdateProperty(PropertyManagerConstants.SECTOR_2_PACE_INDICATOR, s2Indicator);
+        UpdateProperty(PropertyManagerConstants.SECTOR_2_PACE_INDICATOR, FragmentTimePaceIndicatorConverter.ToString(s2Indicator));
         UpdateProperty(PropertyManagerConstants.SECTOR_3_TIME, TimeSpanFormatter.Format(s3Time));
-        UpdateProperty(PropertyManagerConstants.SECTOR_3_PACE_INDICATOR, s3Indicator);
+        UpdateProperty(PropertyManagerConstants.SECTOR_3_PACE_INDICATOR, FragmentTimePaceIndicatorConverter.ToString(s3Indicator));
         UpdateProperty(PropertyManagerConstants.LAP_TIME, TimeSpanFormatter.Format(lapTime));
-        UpdateProperty(PropertyManagerConstants.LAP_TIME_PACE_INDICATOR, lapIndicator);
+        UpdateProperty(PropertyManagerConstants.LAP_TIME_PACE_INDICATOR, FragmentTimePaceIndicatorConverter.ToString(lapIndicator));
         UpdateProperty(PropertyManagerConstants.BEST_LAP_TIME, TimeSpanFormatter.Format(_entry.BestTimes.FullLap));
-        UpdateProperty(PropertyManagerConstants.BEST_LAP_TIME_PACE_INDICATOR, bestLapPaceIndicator);
+        UpdateProperty(PropertyManagerConstants.BEST_LAP_TIME_PACE_INDICATOR, FragmentTimePaceIndicatorConverter.ToString(bestLapPaceIndicator));
     }
 
     private void UpdateProperty<U>(string key, U value)

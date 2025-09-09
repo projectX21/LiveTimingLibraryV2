@@ -5,7 +5,7 @@ public enum RaceEventType
     PitIn,
     PitOut,
     SessionReload,
-    FinishedLap
+    PlayerFinishedLap
 }
 
 public class RaceEventTypeConverter
@@ -23,8 +23,8 @@ public class RaceEventTypeConverter
             case "SESSION_RELOAD":
                 return RaceEventType.SessionReload;
 
-            case "FINISHED_LAP":
-                return RaceEventType.FinishedLap;
+            case "PLAYER_FINISHED_LAP":
+                return RaceEventType.PlayerFinishedLap;
 
             default:
                 throw new Exception($"RaceEventTypeConverter::ToEnum(): cannot convert value to RaceEventType: {value}!");
@@ -44,8 +44,8 @@ public class RaceEventTypeConverter
             case RaceEventType.SessionReload:
                 return "SESSION_RELOAD";
 
-            case RaceEventType.FinishedLap:
-                return "FINISHED_LAP";
+            case RaceEventType.PlayerFinishedLap:
+                return "PLAYER_FINISHED_LAP";
 
             default:
                 throw new Exception($"RaceEventTypeConverter::FromEnum(): cannot determine string value of RaceEventType: " + type + "!");

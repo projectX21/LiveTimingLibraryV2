@@ -2,22 +2,27 @@ using GameReaderCommon;
 using System;
 using System.Linq;
 using System.Text.RegularExpressions;
+using RfactorReader.RF2;
+using CrewChiefV4.rFactor2_V2.rFactor2Data;
 
 public class SessionEntryDataConverter
 {
-    public static SessionEntryData ToSessionEntryData(Opponent entry, GameTitle game)
+    public SessionEntryDataCustomStatementConverter StatementConverter { get; set; }
+
+    public static SessionEntryData ToSessionEntryData(Opponent entry, GameData data)
     {
-        return new SessionEntryData
+        GameTitle game = GameTitleConverter.ToEnum(data.GameName);
+
+        var sessionEntryData = new SessionEntryData
         {
             CarNumber = GetCarNumber(entry, game),
             DisplayName = GetDisplayName(entry, game),
             Manufacturer = GetManufacturer(entry, game),
             CarModel = GetCarModel(entry, game),
-            CarClass = GetCarClass(entry, game),
+            CarClass = entry.CarClass,
             IsInPit = entry.IsCarInPit || entry.IsCarInPitLane || (entry.IsCarInGarage ?? false) || entry.StandingStillInPitLane,
             IsPlayer = entry.IsPlayer,
             CurrentLapNumber = entry.CurrentLap ?? 1,
-            CurrentLapTime = entry.CurrentLapTime ?? TimeSpan.Zero,
             TrackPositionPercent = entry.TrackPositionPercent ?? 0.0,
             SimHubPosition = entry.Position,
             SimHubGapToLeader = entry.GaptoLeader,
@@ -42,16 +47,76 @@ public class SessionEntryDataConverter
             },
             FrontTyreCompound = entry.FrontTyreCompound,
             RearTyreCompound = entry.RearTyreCompound,
-            StartPosition = entry.StartPosition
+            StartPosition = entry.StartPosition,
+            Game = GameTitleConverter.ToEnum(data.GameName)
         };
-    }
 
+        GameSpecificConvertions(sessionEntryData, data);
+        SessionEntryDataCustomStatementConverter.ModifyMatchingEntry(sessionEntryData, GameTitleConverter.ToEnum(data.GameName));
+        return sessionEntryData;
+    }
 
     public static void SetPaceIndicators(SessionEntryData entry, FragmentTimes[] bestFragmentTimesInSameClass)
     {
         SetPaceIndicators(entry.CurrentLapTimes, entry.BestTimes, bestFragmentTimesInSameClass);
         SetPaceIndicators(entry.LastLapTimes, entry.BestTimes, bestFragmentTimesInSameClass);
         SetPaceIndicators(entry.BestTimes, entry.BestTimes, bestFragmentTimesInSameClass);
+    }
+
+    private static SessionEntryData GameSpecificConvertions(SessionEntryData entry, GameData data)
+    {
+        switch (GameTitleConverter.ToEnum(data.GameName))
+        {
+            case GameTitle.RF2:
+                RF2SpecificConvertions(entry, (data as GameData<WrapV2>).GameNewData.Raw.Scoring.mVehicles);
+                RF2SpecificConvertions(entry, (data as GameData<WrapV2>).GameNewData.Raw.telemetry.mVehicles);
+                break;
+
+            case GameTitle.LMU:
+                RF2SpecificConvertions(entry, (data as GameData<LMUWrapV2>).GameNewData.Raw.Scoring.mVehicles);
+                RF2SpecificConvertions(entry, (data as GameData<LMUWrapV2>).GameNewData.Raw.telemetry.mVehicles);
+                break;
+        }
+
+        return entry;
+    }
+
+    private static SessionEntryData RF2SpecificConvertions(SessionEntryData entry, rF2VehicleScoring[] rF2Entries)
+    {
+        // Not needed at the moment
+        /*
+        var carNumberPattern = GetCarNumberPatternForRF2VehicleName(entry.CarNumber);
+
+        foreach (var rF2Entry in rF2Entries)
+        {
+            if (Regex.IsMatch(Utils.ByteArrayToString(rF2Entry.mVehicleName), carNumberPattern))
+            {
+            }
+        }
+        */
+        return entry;
+    }
+
+    private static SessionEntryData RF2SpecificConvertions(SessionEntryData entry, rF2VehicleTelemetry[] rF2Entries)
+    {
+        var carNumberPattern = GetCarNumberPatternForRF2VehicleName(entry.CarNumber);
+
+        foreach (var rF2Entry in rF2Entries)
+        {
+            if (Regex.IsMatch(Utils.ByteArrayToString(rF2Entry.mVehicleName), carNumberPattern))
+            {
+                entry.FuelLoad = rF2Entry.mFuel;
+                entry.FuelCapacity = rF2Entry.mFuelCapacity;
+            }
+        }
+
+        return entry;
+    }
+
+    private static string GetCarNumberPatternForRF2VehicleName(string CarNumber)
+    {
+        // # + any numbers with negative lookahead: @"(?!\d) No number after the CarNumber itself
+        return @"#" + Regex.Escape(CarNumber) + @"(?!\d)";
     }
 
     private static void SetPaceIndicators(FragmentTimes times, FragmentTimes entryBestTimes, FragmentTimes[] bestFragmentTimesInSameClass)
@@ -69,9 +134,9 @@ public class SessionEntryDataConverter
 
     private static FragmentTimePaceIndicator? GetPaceIndicator(FragmentTimes times, FragmentTimes entryBestTimes, FragmentTimes[] bestFragmentTimesInSameClass, LapFragmentType lapFragmentType)
     {
-        TimeSpan? time = times.GetLapTimeByLapFragmentType(lapFragmentType);
-        TimeSpan? entryBestTime = entryBestTimes.GetLapTimeByLapFragmentType(lapFragmentType);
-        TimeSpan? classBestTime = bestFragmentTimesInSameClass.Select(e => e.GetLapTimeByLapFragmentType(lapFragmentType)).Min();
+        TimeSpan? time = times.GetTimeByLapFragmentType(lapFragmentType);
+        TimeSpan? entryBestTime = entryBestTimes.GetTimeByLapFragmentType(lapFragmentType);
+        TimeSpan? classBestTime = bestFragmentTimesInSameClass.Select(e => e.GetTimeByLapFragmentType(lapFragmentType)).Min();
 
         if (time != null)
         {
@@ -110,8 +175,11 @@ public class SessionEntryDataConverter
                 return Regex.Replace(entry.CarName, "^.*  ", "").Trim();
 
             case GameTitle.AMS2:
-                // Format of Name in AMS2: #9.Scott Dixon
-                return Regex.Replace(entry.Name, "^.*\\.", "").Trim();
+                // Format of Name in AMS2 can be #9.Scott Dixon
+                return entry.Name.StartsWith("#") ? Regex.Replace(entry.Name, "^.*\\.", "").Trim() : entry.Name.Trim();
+
+            case GameTitle.LMU:
+                return Regex.Replace(entry.CarName, @"\d+$", ""); // Porsche Penske Motorsport 2024 -> Remove the year at the end
 
             default:
                 return entry.TeamName;
@@ -138,11 +206,6 @@ public class SessionEntryDataConverter
         return (manufacturer?.Length > 0)
             ? Regex.Replace(carName, manufacturer, "", RegexOptions.IgnoreCase).Trim()
             : carName;
-    }
-
-    private static string GetCarClass(Opponent entry, GameTitle game)
-    {
-        return CarClassConverter.GetConvertedCarClass(game, entry.CarClass);
     }
 
     private static TimeSpan? GetBestLapFragmentTime(Opponent entry, LapFragmentType lapFragment)

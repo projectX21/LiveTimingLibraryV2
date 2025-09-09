@@ -70,10 +70,15 @@
     <Compile Include="LiveTimingPlugin.cs" />
     <Compile Include="LiveTimingPluginProcessor.cs" />
 
-    <Compile Include="Converter/CarClassConverter.cs" />
     <Compile Include="Converter/SessionDataConverter.cs" />
     <Compile Include="Converter/SessionEntryDataConverter.cs" />
+    <Compile Include="Converter/SessionEntryDataCustomStatementConverter.cs" />
 
+    <Compile Include="Model\RaceEvent\PitEvent.cs" />
+    <Compile Include="Model\RaceEvent\PlayerFinishedLapEvent.cs" />
+    <Compile Include="Model\RaceEvent\RaceEvent.cs" />
+    <Compile Include="Model\RaceEvent\RaceEventType.cs" />
+    <Compile Include="Model\RaceEvent\SessionReloadEvent.cs" />
     <Compile Include="Model\EntryProgress.cs" />
     <Compile Include="Model\FragmentTimePaceIndicator.cs" />
     <Compile Include="Model\FragmentTimes.cs" />
@@ -93,13 +98,6 @@
     <Compile Include="Provider/ISessionDataProvider.cs" />
     <Compile Include="Provider/SessionDataProvider.cs" />
 
-    <Compile Include="RaceEvent\PitEvent.cs" />
-    <Compile Include="RaceEvent\PitInEvent.cs" />
-    <Compile Include="RaceEvent\PitOutEvent.cs" />
-    <Compile Include="RaceEvent\RaceEvent.cs" />
-    <Compile Include="RaceEvent\RaceEventType.cs" />
-    <Compile Include="RaceEvent\SessionReloadEvent.cs" />
-
     <Compile Include="Recovery\IRaceEventRecoveryFile.cs" />
     <Compile Include="Recovery\IRaceEventRecoveryFileEventSelector.cs" />
     <Compile Include="Recovery\ISessionDataRecovery.cs" />
@@ -114,6 +112,7 @@
     <Compile Include="Util/SessionDataValidator.cs" />
     <Compile Include="Util/SessionIdGenerator.cs" />
     <Compile Include="Util/TimeSpanFormatter.cs" />
+    <Compile Include="Util/Utils.cs" />
   </ItemGroup>
 
   <ItemGroup>
